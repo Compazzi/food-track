@@ -21,19 +21,46 @@ export function isToday(iso: string): boolean {
   return iso === TODAY;
 }
 
+export function getYesterdayDate(): string {
+  return addDays(TODAY, -1);
+}
+
+export function isYesterday(iso: string): boolean {
+  return iso === getYesterdayDate();
+}
+
+/** Prevent selecting future dates; past is unlimited. */
+export function clampToAllowedRange(iso: string): string {
+  if (iso > TODAY) return TODAY;
+  return iso;
+}
+
+export function canGoToPreviousDay(): boolean {
+  return true;
+}
+
+export function canGoToNextDay(iso: string): boolean {
+  return !isToday(iso);
+}
+
 export function formatDisplayDate(iso: string): string {
   if (isToday(iso)) return "Today";
 
-  const date = parseISODate(iso);
-  const today = parseISODate(TODAY);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (formatISODate(yesterday) === iso) return "Yesterday";
+  if (isYesterday(iso)) return "Yesterday";
 
-  return date.toLocaleDateString("en-US", {
+  return parseISODate(iso).toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
+  });
+}
+
+export function formatProminentDate(iso: string): string {
+  return parseISODate(iso).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
@@ -46,9 +73,10 @@ export function formatDayOfMonth(iso: string): string {
 }
 
 export function getDateRangeEndingOn(endDate: string, dayCount: number): string[] {
+  const clampedEnd = clampToAllowedRange(endDate);
   const dates: string[] = [];
   for (let i = dayCount - 1; i >= 0; i--) {
-    dates.push(addDays(endDate, -i));
+    dates.push(addDays(clampedEnd, -i));
   }
   return dates;
 }

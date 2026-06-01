@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import QuantityInput, { parseQuantityToGrams } from "@/components/QuantityInput";
 import ProductSearch from "@/components/ProductSearch";
 import { buildRecipeNutrition, createRecipeProduct } from "@/lib/recipe-builder";
+import type { MeasurementUnitId } from "@/lib/measurement-units";
 import { saveProduct } from "@/lib/product-catalog";
 import type { RecipeIngredient } from "@/lib/recipe-builder";
 import type { Product } from "@/types/models";
@@ -18,7 +20,8 @@ export default function RecipeBuilderForm() {
   const router = useRouter();
   const [ingredients, setIngredients] = useState<DraftIngredient[]>([]);
   const [pickProduct, setPickProduct] = useState<Product | null>(null);
-  const [pickGrams, setPickGrams] = useState("");
+  const [pickAmount, setPickAmount] = useState("");
+  const [pickUnit, setPickUnit] = useState<MeasurementUnitId>("g");
   const [recipeName, setRecipeName] = useState("");
   const [brand, setBrand] = useState("My Recipes");
   const [porcaoGramas, setPorcaoGramas] = useState("100");
@@ -49,14 +52,19 @@ export default function RecipeBuilderForm() {
       setError("Select a product to add.");
       return;
     }
-    const grams = Number(pickGrams);
-    if (!Number.isFinite(grams) || grams <= 0) {
-      setError("Enter valid grams for this ingredient.");
+    const { grams, error: convertError } = parseQuantityToGrams(
+      pickAmount,
+      pickUnit,
+      pickProduct,
+    );
+    if (convertError) {
+      setError(convertError);
       return;
     }
     setIngredients((prev) => [...prev, { product: pickProduct, grams }]);
     setPickProduct(null);
-    setPickGrams("");
+    setPickAmount("");
+    setPickUnit("g");
   }
 
   function removeIngredient(index: number) {
@@ -152,24 +160,21 @@ export default function RecipeBuilderForm() {
               onSelect={setPickProduct}
               placeholder="Search catalog ingredients…"
             />
-            <div className="flex gap-2">
-              <input
-                type="number"
-                min="0.1"
-                step="0.1"
-                value={pickGrams}
-                onChange={(e) => setPickGrams(e.target.value)}
-                placeholder="Grams"
-                className="flex-1 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/40"
-              />
-              <button
-                type="button"
-                onClick={addIngredient}
-                className="shrink-0 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
-              >
-                Add
-              </button>
-            </div>
+            <QuantityInput
+              product={pickProduct}
+              amount={pickAmount}
+              unit={pickUnit}
+              onAmountChange={setPickAmount}
+              onUnitChange={setPickUnit}
+              label="Amount"
+            />
+            <button
+              type="button"
+              onClick={addIngredient}
+              className="w-full rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
+            >
+              Add ingredient
+            </button>
           </div>
 
           {ingredients.length > 0 && (

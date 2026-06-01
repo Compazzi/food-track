@@ -35,6 +35,7 @@ const wheyNutrition: NutritionData = {
   magnesio: { "100g": 535, porcao: 160, vd: 61 },
   potassio: { "100g": 800, porcao: 240, vd: 0 },
   zinco: { "100g": 7.5, porcao: 2.2, vd: 31 },
+  vitamina_c: { "100g": 0, porcao: 0, vd: 0 },
 };
 
 const riceNutrition: NutritionData = {
@@ -64,23 +65,26 @@ export const mockUser: User = {
     fatG: 95,
     fiberG: 40,
   },
-  micronutrientLimits: [
+  nutrientGoals: [
     {
       nutrientKey: "sodio",
       label: "Sodium",
-      maxAmount: 2000,
+      target: 2000,
+      thresholdType: "maximum",
       unit: "mg",
     },
     {
       nutrientKey: "acucares_totais",
-      label: "Sugars",
-      maxAmount: 50,
+      label: "Total sugars",
+      target: 50,
+      thresholdType: "maximum",
       unit: "g",
     },
     {
       nutrientKey: "ferro",
       label: "Iron",
-      maxAmount: 45,
+      target: 18,
+      thresholdType: "minimum",
       unit: "mg",
     },
   ],
@@ -93,6 +97,14 @@ export const mockProducts: Product[] = [
     brand: "NutriBrasil",
     barcode_ean13: "7891234567890",
     tags: ["Breakfast", "Lanche/Snack", "Complex Carbs", "Post-Workout"],
+    ingredients: [
+      "Flocos de aveia",
+      "Mel",
+      "Castanha de caju",
+      "Proteína isolada de soja",
+      "Óleo de coco",
+      "Sal",
+    ],
     nutrition_data: granolaNutrition,
   },
   {
@@ -101,6 +113,10 @@ export const mockProducts: Product[] = [
     brand: "PowerGym",
     barcode_ean13: "7899876543210",
     tags: ["Breakfast", "Lean Protein", "Pre-Workout", "Post-Workout"],
+    ingredients:
+      "Proteína isolada do soro do leite, cacau em pó, emulsificante lecitina de soja, edulcorante sucralose, aromatizante natural de chocolate.",
+    storage_instructions:
+      "Conservar em local fresco e seco. Após aberto, consumir em até 60 dias. Não necessita refrigeração.",
     nutrition_data: wheyNutrition,
   },
   {
@@ -109,6 +125,8 @@ export const mockProducts: Product[] = [
     brand: "Campo Verde",
     barcode_ean13: "7895551234567",
     tags: ["Lunch", "Dinner", "Complex Carbs"],
+    ingredients: ["Arroz integral", "Água"],
+    additives: "Não contém aditivos alimentares.",
     nutrition_data: riceNutrition,
   },
 ];
@@ -137,6 +155,15 @@ export const mockMealLogs: MealLog[] = [
     userId: "user-1",
     date: "2026-05-30",
     entries: [{ productId: "prod-rice", gramsConsumed: 450 }],
+  },
+  {
+    id: "meal-deep-past",
+    userId: "user-1",
+    date: "2026-04-19",
+    entries: [
+      { productId: "prod-granola", gramsConsumed: 45 },
+      { productId: "prod-whey", gramsConsumed: 30 },
+    ],
   },
 ];
 

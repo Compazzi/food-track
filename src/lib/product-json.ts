@@ -1,4 +1,5 @@
 import { normalizeProductTags } from "@/data/product-tags";
+import { normalizeIngredients } from "@/lib/product-details";
 import { CORE_NUTRIENT_KEYS, NUTRITION_METADATA_KEYS } from "@/types/nutrition";
 import type { Product } from "@/types/models";
 import type { NutritionData, NutrientValues } from "@/types/nutrition";
@@ -9,6 +10,9 @@ export const PRODUCT_JSON_TEMPLATE: Product = {
   brand: "Brand name",
   barcode_ean13: "7891234567890",
   tags: ["Breakfast", "Lean Protein"],
+  ingredients: ["Ingredient one", "Ingredient two"],
+  storage_instructions: "",
+  additives: "",
   nutrition_data: {
     porcoes_por_embalagem: 8,
     porcao_gramas: 30,
@@ -23,6 +27,7 @@ export const PRODUCT_JSON_TEMPLATE: Product = {
     gorduras_trans: { "100g": 0, porcao: 0, vd: 0 },
     fibras_alimentares: { "100g": 0, porcao: 0, vd: 0 },
     sodio: { "100g": 0, porcao: 0, vd: 0 },
+    vitamina_c: { "100g": 0, porcao: 0, vd: 0 },
   },
 };
 
@@ -154,6 +159,25 @@ export function parseProductJson(
     product.tags = normalizeProductTags(record.tags);
   }
 
+  if (record.ingredients !== undefined) {
+    const normalized = normalizeIngredients(
+      record.ingredients as Product["ingredients"],
+    );
+    if (typeof record.ingredients === "string") {
+      product.ingredients = normalized[0] ?? "";
+    } else if (Array.isArray(record.ingredients)) {
+      product.ingredients = normalized;
+    }
+  }
+
+  if (typeof record.additives === "string") {
+    product.additives = record.additives;
+  }
+
+  if (typeof record.storage_instructions === "string") {
+    product.storage_instructions = record.storage_instructions;
+  }
+
   return { product };
 }
 
@@ -176,6 +200,23 @@ export function formatProductJson(product: Product): string {
 
   if (product.tags?.length) {
     payload.tags = product.tags;
+  }
+
+  if (product.ingredients !== undefined) {
+    const items = normalizeIngredients(product.ingredients);
+    if (items.length === 1) {
+      payload.ingredients = items[0];
+    } else if (items.length > 1) {
+      payload.ingredients = items;
+    }
+  }
+
+  if (product.additives?.trim()) {
+    payload.additives = product.additives;
+  }
+
+  if (product.storage_instructions?.trim()) {
+    payload.storage_instructions = product.storage_instructions;
   }
 
   return JSON.stringify(payload, null, 2);

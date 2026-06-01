@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import NutrientTracker from "@/components/NutrientTracker";
-import { getNutrientByKey } from "@/data/nutrients";
-import { getAllTrackableNutrients } from "@/lib/tracked-nutrients-store";
+import { getTrackableNutrientByKey } from "@/lib/tracked-nutrients-store";
 import type { TrackableNutrient } from "@/data/nutrients";
 
 interface NutrientTrackerLoaderProps {
@@ -15,8 +14,7 @@ export default function NutrientTrackerLoader({ nutrientKey }: NutrientTrackerLo
   const [nutrient, setNutrient] = useState<TrackableNutrient | null | undefined>(undefined);
 
   useEffect(() => {
-    const all = getAllTrackableNutrients();
-    setNutrient(getNutrientByKey(all, nutrientKey) ?? null);
+    setNutrient(getTrackableNutrientByKey(nutrientKey) ?? null);
   }, [nutrientKey]);
 
   if (nutrient === undefined) {

@@ -6,6 +6,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -14,6 +15,10 @@ import {
 } from "recharts";
 import type { NutrientPeriod } from "@/data/nutrients";
 import type { TrackableNutrient } from "@/data/nutrients";
+import {
+  getGoalDescription,
+  getThresholdLabel,
+} from "@/lib/nutrient-goals";
 import { getNutrientDataForPeriod } from "@/lib/nutrient-history";
 
 const PERIODS: { id: NutrientPeriod; label: string }[] = [
@@ -57,16 +62,35 @@ function PeriodSummary({
   );
 }
 
+function barFillForPoint(
+  consumed: number,
+  nutrient: TrackableNutrient,
+): string {
+  if (nutrient.thresholdType === "maximum") {
+    return consumed > nutrient.target ? "#EF4444" : "#3CB878";
+  }
+  return consumed >= nutrient.target ? "#3CB878" : "#F59E0B";
+}
+
 export default function NutrientTracker({ nutrient }: NutrientTrackerProps) {
   const [period, setPeriod] = useState<NutrientPeriod>("7d");
+  const isMax = nutrient.thresholdType === "maximum";
+  const lineColor = isMax ? "#EF4444" : "#059669";
+  const lineLabel = isMax
+    ? `Ceiling: ${nutrient.target} ${nutrient.unit}`
+    : `Floor: ${nutrient.target} ${nutrient.unit}`;
 
   const { chartData, summary, total24h } = useMemo(
     () => getNutrientDataForPeriod(nutrient.key, period),
     [nutrient.key, period],
   );
 
-  const maxConsumed = Math.max(...chartData.map((d) => d.consumed), nutrient.dailyMax, 0);
-  const yMax = Math.max(Math.ceil(maxConsumed * 1.15), nutrient.dailyMax);
+  const maxConsumed = Math.max(...chartData.map((d) => d.consumed), nutrient.target, 0);
+  const yMax = Math.max(Math.ceil(maxConsumed * 1.15), Math.ceil(nutrient.target * 1.1));
+
+  const threshold24hMet =
+    total24h !== null &&
+    (isMax ? total24h <= nutrient.target : total24h >= nutrient.target);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#3CB878] via-[#8FD14F] to-[#F5D547] px-4 pb-10 pt-6 sm:px-6">
@@ -78,8 +102,9 @@ export default function NutrientTracker({ nutrient }: NutrientTrackerProps) {
           ← Dashboard
         </Link>
         <h1 className="mt-3 text-2xl font-bold text-white">{nutrient.label}</h1>
-        <p className="text-sm text-white/90">
-          Daily limit: {nutrient.dailyMax} {nutrient.unit}
+        <p className="text-sm text-white/90">{getGoalDescription(nutrient)}</p>
+        <p className="mt-1 text-xs text-white/80">
+          {getThresholdLabel(nutrient.thresholdType)}: {nutrient.target} {nutrient.unit}
         </p>
       </header>
 
@@ -117,9 +142,25 @@ export default function NutrientTracker({ nutrient }: NutrientTrackerProps) {
                 {total24h}
               </p>
               <p className="mt-2 text-lg font-semibold text-neutral-500">{nutrient.unit}</p>
-              <p className="mt-6 max-w-xs text-xs text-neutral-500">
-                Based on today&apos;s logged meals. Daily limit: {nutrient.dailyMax}{" "}
-                {nutrient.unit}.
+              <p
+                className={`mt-4 rounded-full px-4 py-1.5 text-sm font-semibold ${
+                  threshold24hMet
+                    ? "bg-emerald-100 text-emerald-800"
+                    : isMax
+                      ? "bg-red-100 text-red-800"
+                      : "bg-amber-100 text-amber-900"
+                }`}
+              >
+                {isMax
+                  ? threshold24hMet
+                    ? "Under daily maximum"
+                    : "Above daily maximum"
+                  : threshold24hMet
+                    ? "Minimum reached"
+                    : "Below daily minimum"}
+              </p>
+              <p className="mt-4 max-w-xs text-xs text-neutral-500">
+                {getGoalDescription(nutrient)}
               </p>
             </div>
           )}
@@ -164,30 +205,42 @@ export default function NutrientTracker({ nutrient }: NutrientTrackerProps) {
                       }}
                     />
                     <ReferenceLine
-                      y={nutrient.dailyMax}
-                      stroke="#EF4444"
+                      y={nutrient.target}
+                      stroke={lineColor}
                       strokeDasharray="6 4"
                       strokeWidth={2}
                       label={{
-                        value: `Daily max (${nutrient.dailyMax} ${nutrient.unit})`,
+                        value: lineLabel,
                         position: "insideTopRight",
-                        fill: "#EF4444",
+                        fill: lineColor,
                         fontSize: 11,
                         fontWeight: 600,
                       }}
                     />
-                    <Bar
-                      dataKey="consumed"
-                      fill="#3CB878"
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={period === "30d" ? 14 : 36}
-                    />
+                    <Bar dataKey="consumed" radius={[6, 6, 0, 0]} maxBarSize={period === "30d" ? 14 : 36}>
+                      {chartData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={barFillForPoint(entry.consumed, nutrient)}
+                        />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
               <p className="mt-4 text-xs text-neutral-500">
-                Red dashed line = your daily maximum. Bars above the line exceeded the limit that
-                day.
+                {isMax ? (
+                  <>
+                    <span className="font-semibold text-red-600">Red dashed line</span> = daily
+                    ceiling ({nutrient.target} {nutrient.unit}). Red bars exceeded the limit.
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold text-emerald-700">Green dashed line</span> =
+                    daily floor ({nutrient.target} {nutrient.unit}). Green bars met the minimum;
+                    amber bars are below target.
+                  </>
+                )}
               </p>
             </>
           )}

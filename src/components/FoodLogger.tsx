@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import QuantityInput, { parseQuantityToGrams } from "@/components/QuantityInput";
 import ProductSearch from "@/components/ProductSearch";
+import type { MeasurementUnitId } from "@/lib/measurement-units";
 import { logFoodEntry } from "@/lib/meal-log-store";
 import type { Product } from "@/types/models";
 
 export default function FoodLogger() {
   const router = useRouter();
   const [selected, setSelected] = useState<Product | null>(null);
-  const [grams, setGrams] = useState("");
+  const [amount, setAmount] = useState("");
+  const [unit, setUnit] = useState<MeasurementUnitId>("g");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,19 +27,20 @@ export default function FoodLogger() {
       return;
     }
 
-    const amount = Number(grams);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setError("Enter a valid amount in grams (greater than zero).");
+    const { grams, error: convertError } = parseQuantityToGrams(amount, unit, selected);
+    if (convertError) {
+      setError(convertError);
       return;
     }
 
     logFoodEntry({
       productId: selected.id,
-      gramsConsumed: amount,
+      gramsConsumed: grams,
     });
 
-    setMessage(`Logged ${amount} g of ${selected.name}.`);
-    setGrams("");
+    setMessage(`Logged ${grams} g of ${selected.name}.`);
+    setAmount("");
+    setUnit("g");
     setSelected(null);
     router.refresh();
   }
@@ -51,7 +55,9 @@ export default function FoodLogger() {
           ← Dashboard
         </Link>
         <h1 className="mt-3 text-2xl font-bold text-white">Log food</h1>
-        <p className="text-sm text-white/90">Search the catalog and enter grams consumed.</p>
+        <p className="text-sm text-white/90">
+          Search the catalog and enter amount with your preferred unit.
+        </p>
       </header>
 
       <form
@@ -63,6 +69,9 @@ export default function FoodLogger() {
           onSelect={(product) => {
             setSelected(product);
             setError(null);
+            if (unit === "porcao" && product.nutrition_data.porcao_gramas <= 0) {
+              setUnit("g");
+            }
           }}
         />
 
@@ -72,19 +81,13 @@ export default function FoodLogger() {
           </p>
         )}
 
-        <label className="block">
-          <span className="text-sm font-semibold text-neutral-800">Quantity (grams)</span>
-          <input
-            type="number"
-            min="0.1"
-            step="0.1"
-            inputMode="decimal"
-            value={grams}
-            onChange={(e) => setGrams(e.target.value)}
-            placeholder="e.g. 150"
-            className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none ring-emerald-500/30 focus:ring-2"
-          />
-        </label>
+        <QuantityInput
+          product={selected}
+          amount={amount}
+          unit={unit}
+          onAmountChange={setAmount}
+          onUnitChange={setUnit}
+        />
 
         {error && <p className="text-sm font-medium text-red-600">{error}</p>}
         {message && <p className="text-sm font-medium text-emerald-700">{message}</p>}

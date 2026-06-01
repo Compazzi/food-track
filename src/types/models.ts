@@ -2,9 +2,21 @@ import type { NutritionData } from "./nutrition";
 
 export type MacroUnit = "g" | "mg" | "mcg" | "kcal";
 
-/** User-defined cap or floor for a micronutrient (e.g. sodium under 2000 mg). */
+/** Whether the target is a ceiling to stay under or a floor to reach. */
+export type NutrientThresholdType = "maximum" | "minimum";
+
+export interface NutrientGoal {
+  nutrientKey: string;
+  label: string;
+  target: number;
+  thresholdType: NutrientThresholdType;
+  unit: MacroUnit;
+  /** User-defined nutrient not from the built-in catalog. */
+  isCustom?: boolean;
+}
+
+/** @deprecated Use {@link NutrientGoal} with thresholdType and target. */
 export interface MicronutrientLimit {
-  /** JSON key on nutrition_data (e.g. sodio, ferro). */
   nutrientKey: string;
   label: string;
   maxAmount: number;
@@ -24,7 +36,7 @@ export interface User {
   name: string;
   email: string;
   dailyGoals: MacroGoals;
-  micronutrientLimits: MicronutrientLimit[];
+  nutrientGoals: NutrientGoal[];
 }
 
 export interface RecipeSourceIngredient {
@@ -36,16 +48,16 @@ export interface Product {
   id: string;
   name: string;
   brand: string;
-  /** Required for registered products; omitted for recipes. */
   barcode_ean13?: string;
   nutrition_data: NutritionData;
-  /**
-   * Hybrid tags: meal occasion (Breakfast, Lunch, …) and
-   * macronutrient/fitness role (Lean Protein, Post-Workout, …).
-   */
+  /** Ingredient list as a single block or ordered items. */
+  ingredients?: string | string[];
+  /** Optional additives declaration (future tracking). */
+  additives?: string;
+  /** Optional storage / handling instructions. */
+  storage_instructions?: string;
   tags?: string[];
   isCustom?: boolean;
-  /** Combined recipe with no barcode. */
   isRecipe?: boolean;
   recipeIngredientIds?: RecipeSourceIngredient[];
 }

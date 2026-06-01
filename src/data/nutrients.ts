@@ -1,4 +1,4 @@
-import type { MicronutrientLimit } from "@/types/models";
+import type { NutrientGoal, NutrientThresholdType } from "@/types/models";
 
 export type NutrientPeriod = "24h" | "7d" | "30d";
 
@@ -6,18 +6,20 @@ export interface TrackableNutrient {
   key: string;
   label: string;
   unit: "g" | "mg" | "mcg";
-  /** Daily maximum (from user limits or default). */
+  target: number;
+  thresholdType: NutrientThresholdType;
+  /** @deprecated Use target */
   dailyMax: number;
 }
 
-export function buildTrackableNutrients(
-  limits: MicronutrientLimit[],
-): TrackableNutrient[] {
-  return limits.map((limit) => ({
-    key: limit.nutrientKey,
-    label: limit.label,
-    unit: limit.unit === "kcal" ? "g" : limit.unit,
-    dailyMax: limit.maxAmount,
+export function buildTrackableNutrients(goals: NutrientGoal[]): TrackableNutrient[] {
+  return goals.map((goal) => ({
+    key: goal.nutrientKey,
+    label: goal.label,
+    unit: goal.unit === "kcal" ? "g" : goal.unit,
+    target: goal.target,
+    thresholdType: goal.thresholdType,
+    dailyMax: goal.thresholdType === "maximum" ? goal.target : goal.target,
   }));
 }
 

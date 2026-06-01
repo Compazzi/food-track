@@ -10,8 +10,13 @@ import {
   getNutrientConsumedOnDate,
   type DailyMacroStats,
 } from "@/lib/daily-stats";
-import { formatDisplayDate } from "@/lib/date-nav";
-import { getPinnedTrackableNutrients } from "@/lib/tracked-nutrients-store";
+import { clampToAllowedRange, formatProminentDate } from "@/lib/date-nav";
+import { getNutrientProgress } from "@/lib/nutrient-goals";
+import {
+  getDashboardTrackableNutrients,
+  getNutrientGoals,
+  hasSugarTrackingConflict,
+} from "@/lib/tracked-nutrients-store";
 import type { TrackableNutrient } from "@/data/nutrients";
 import CalorieRing from "./CalorieRing";
 import DateNavigator from "./DateNavigator";
@@ -21,10 +26,12 @@ export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [stats, setStats] = useState<DailyMacroStats>(() => getMacroStatsForDate(TODAY));
   const [trackable, setTrackable] = useState<TrackableNutrient[]>([]);
+  const [sugarConflict, setSugarConflict] = useState(false);
 
   const refresh = useCallback(() => {
     setStats(getMacroStatsForDate(selectedDate));
-    setTrackable(getPinnedTrackableNutrients());
+    setTrackable(getDashboardTrackableNutrients());
+    setSugarConflict(hasSugarTrackingConflict(getNutrientGoals()));
   }, [selectedDate]);
 
   useEffect(() => {
@@ -34,13 +41,12 @@ export default function Dashboard() {
   const { dailyGoals } = mockUser;
   const burned = selectedDate === TODAY ? mockCaloriesBurnedToday : 0;
   const remaining = Math.max(0, dailyGoals.calories - stats.calories + burned);
-  const dateLabel = formatDisplayDate(selectedDate);
+  const prominentDate = formatProminentDate(selectedDate);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#3CB878] via-[#8FD14F] to-[#F5D547] px-4 pb-10 pt-6 sm:px-6">
-      <header className="mx-auto mb-4 flex max-w-md items-center justify-between">
+      <header className="mx-auto mb-2 flex max-w-md items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-white/90">{dateLabel}</p>
           <h1 className="text-2xl font-bold text-white">{mockUser.name}</h1>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
@@ -59,8 +65,15 @@ export default function Dashboard() {
         </div>
       </header>
 
+      <p className="mx-auto mb-3 max-w-md text-center text-lg font-semibold text-white sm:text-xl">
+        {prominentDate}
+      </p>
+
       <div className="mx-auto mb-6 max-w-md">
-        <DateNavigator selectedDate={selectedDate} onDateChange={setSelectedDate} />
+        <DateNavigator
+          selectedDate={selectedDate}
+          onDateChange={(date) => setSelectedDate(clampToAllowedRange(date))}
+        />
       </div>
 
       <section className="mx-auto flex max-w-md flex-col items-center">
@@ -106,21 +119,27 @@ export default function Dashboard() {
           </Link>
         </div>
 
+        {sugarConflict && (
+          <p className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            You are tracking both total and added sugars. The dashboard shows total sugars only.{" "}
+            <Link href="/settings/nutrients" className="font-semibold underline">
+              Resolve in settings
+            </Link>
+          </p>
+        )}
+
         {trackable.length === 0 ? (
           <p className="rounded-2xl bg-white/90 px-4 py-3 text-center text-sm text-neutral-600">
-            No nutrients pinned.{" "}
+            No nutrients tracked.{" "}
             <Link href="/settings/nutrients" className="font-semibold text-emerald-700 underline">
-              Choose nutrients
+              Add nutrients
             </Link>
           </p>
         ) : (
           <ul className="space-y-2">
             {trackable.map((nutrient) => {
               const consumed = getNutrientConsumedOnDate(nutrient.key, selectedDate);
-              const pct =
-                nutrient.dailyMax > 0
-                  ? Math.min((consumed / nutrient.dailyMax) * 100, 100)
-                  : 0;
+              const progress = getNutrientProgress(consumed, nutrient);
 
               return (
                 <li key={nutrient.key}>
@@ -132,9 +151,9 @@ export default function Dashboard() {
                       <p className="font-semibold text-neutral-900">{nutrient.label}</p>
                       <p className="text-sm tabular-nums text-neutral-600">
                         {consumed}
-                        {nutrient.unit} / {nutrient.dailyMax}
-                        {nutrient.unit} · {dateLabel.toLowerCase()}
+                        {nutrient.unit} · {progress.goalLabel}
                       </p>
+                      <p className="text-xs text-neutral-500">{progress.statusLabel}</p>
                     </div>
                     <div className="h-10 w-10 shrink-0">
                       <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
@@ -151,9 +170,9 @@ export default function Dashboard() {
                           cy="18"
                           r="15.5"
                           fill="none"
-                          stroke={pct >= 100 ? "#EF4444" : "#3CB878"}
+                          stroke={progress.ringColor}
                           strokeWidth="4"
-                          strokeDasharray={`${(pct / 100) * 97.4} 97.4`}
+                          strokeDasharray={`${(progress.percent / 100) * 97.4} 97.4`}
                           strokeLinecap="round"
                         />
                       </svg>
