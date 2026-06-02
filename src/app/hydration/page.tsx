@@ -107,7 +107,7 @@ export default function HydrationPage() {
                 <Tooltip 
                   cursor={{ fill: '#f3f4f6' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [`${value} ml`, 'Intake']}
+                  formatter={(value: any) => [`${value} ml`, 'Intake']}
                 />
                 {/* Dashed line representing the minimum floor. I used blue for water instead of red for limit. */}
                 <ReferenceLine 
