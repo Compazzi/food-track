@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  food-track:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: food-track
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    # If you use a custom Docker network for your proxy, declare it here
+    # networks:
+    #   - proxy-network
