@@ -73,3 +73,14 @@ export interface MealLog {
   date: string;
   entries: MealLogEntry[];
 }
+
+export interface HydrationLog {
+  id: string;
+  date: string; // Format: YYYY-MM-DD
+  amountMl: number;
+  timestamp: number;
+}
+
+export interface HydrationGoal {
+  targetMl: number; // Default could be 2000 or 2500
+}

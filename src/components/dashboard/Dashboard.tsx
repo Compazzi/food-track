@@ -21,6 +21,7 @@ import type { TrackableNutrient } from "@/data/nutrients";
 import CalorieRing from "./CalorieRing";
 import DateNavigator from "./DateNavigator";
 import MacroCard from "./MacroCard";
+import HydrationCard from "./HydrationCard";
 
 export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(TODAY);
@@ -105,6 +106,16 @@ export default function Dashboard() {
           barColor="#F5A623"
         />
       </section>
+      
+      <section className="mx-auto mt-8 max-w-md">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-white/95">
+            Hydration
+          </h2>
+        </div>
+        <HydrationCard currentDate={selectedDate} />
+      </section>
+      
 
       <section className="mx-auto mt-8 max-w-md">
         <div className="mb-3 flex items-center justify-between gap-2">
