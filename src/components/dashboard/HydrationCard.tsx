@@ -1,30 +1,36 @@
 'use client'; 
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useHydrationStore } from '@/lib/hydration-store';
 
 export default function HydrationCard({ currentDate }: { currentDate: string }) {
+  const router = useRouter();
   const { targetMl, getDailyTotal, addHydration } = useHydrationStore();
   const currentTotal = getDailyTotal(currentDate);
   const progressPercentage = Math.min((currentTotal / targetMl) * 100, 100);
   
   const statusLabel = currentTotal >= targetMl ? 'Goal reached' : 'Below minimum';
 
-  return (
-    <div className="group relative flex flex-col gap-3 rounded-2xl bg-white px-4 py-3 shadow-lg shadow-black/10 transition hover:scale-[1.01]">
-      {/* 
-        The Invisible Overlay Link
-        This stretches over the entire card area, making it clickable, 
-        but sits BEHIND the buttons. 
-      */}
-      <Link 
-        href="/hydration" 
-        className="absolute inset-0 z-0 rounded-2xl" 
-        aria-label="View Hydration Details" 
-      />
+  // The bulletproof target inspection method
+  const handleWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    
+    // If the click originated from inside a button, DO NOT navigate
+    if (target.closest('button')) {
+      return;
+    }
+    
+    // If it was just the card background or text, navigate to the page
+    router.push('/hydration');
+  };
 
+  return (
+    <div 
+      onClick={handleWrapperClick}
+      className="group flex cursor-pointer flex-col gap-3 rounded-2xl bg-white px-4 py-3 shadow-lg shadow-black/10 transition hover:scale-[1.01]"
+    >
       {/* Top Row: Info & Progress Ring */}
-      <div className="pointer-events-none relative z-10 flex items-center gap-3">
+      <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <span className="inline-block font-semibold text-neutral-900 transition-colors group-hover:text-blue-600">
             Hydration
@@ -49,8 +55,8 @@ export default function HydrationCard({ currentDate }: { currentDate: string }) 
         </div>
       </div>
 
-      {/* Bottom Row: Quick Add Buttons (Sitting ABOVE the invisible link) */}
-      <div className="relative z-10 flex gap-2">
+      {/* Bottom Row: Quick Add Buttons */}
+      <div className="flex gap-2">
         <button 
           type="button"
           onClick={() => addHydration(500, currentDate)}
