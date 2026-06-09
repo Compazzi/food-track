@@ -1,4 +1,4 @@
-'use client'; 
+'use client'; // Required since we are using useRouter and event handlers
 
 import { useRouter } from 'next/navigation';
 import { useHydrationStore } from '@/lib/hydration-store';
@@ -11,31 +11,29 @@ export default function HydrationCard({ currentDate }: { currentDate: string }) 
   
   const statusLabel = currentTotal >= targetMl ? 'Goal reached' : 'Below minimum';
 
-  // The bulletproof target inspection method
-  const handleWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    
-    // If the click originated from inside a button, DO NOT navigate
-    if (target.closest('button')) {
-      return;
-    }
-    
-    // If it was just the card background or text, navigate to the page
+  // Navigate to the hydration page when the card is clicked
+  const handleCardClick = () => {
     router.push('/hydration');
+  };
+
+  // Add water, but prevent the card click event from firing
+  const handleAdd = (e: React.MouseEvent, amount: number) => {
+    e.stopPropagation(); 
+    addHydration(amount, currentDate);
   };
 
   return (
     <div 
-      onClick={handleWrapperClick}
-      className="group flex cursor-pointer flex-col gap-3 rounded-2xl bg-white px-4 py-3 shadow-lg shadow-black/10 transition hover:scale-[1.01]"
+      onClick={handleCardClick}
+      className="cursor-pointer rounded-2xl bg-white px-4 py-3 shadow-lg shadow-black/10 transition hover:scale-[1.01] flex flex-col gap-3"
     >
       {/* Top Row: Info & Progress Ring */}
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <span className="inline-block font-semibold text-neutral-900 transition-colors group-hover:text-blue-600">
+          <span className="font-semibold text-neutral-900 inline-block">
             Hydration
           </span>
-          <p className="tabular-nums text-sm text-neutral-600">
+          <p className="text-sm tabular-nums text-neutral-600">
             {currentTotal} ml &middot; &ge; {targetMl} ml
           </p>
           <p className="text-xs text-neutral-500">{statusLabel}</p>
@@ -44,9 +42,21 @@ export default function HydrationCard({ currentDate }: { currentDate: string }) 
         {/* Progress Ring */}
         <div className="h-10 w-10 shrink-0">
           <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-            <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" strokeWidth="4" />
             <circle
-              cx="18" cy="18" r="15.5" fill="none" stroke="#3b82f6" strokeWidth="4"
+              cx="18"
+              cy="18"
+              r="15.5"
+              fill="none"
+              stroke="#E5E7EB"
+              strokeWidth="4"
+            />
+            <circle
+              cx="18"
+              cy="18"
+              r="15.5"
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="4"
               strokeDasharray={`${(progressPercentage / 100) * 97.4} 97.4`}
               strokeLinecap="round"
               className="transition-all duration-500 ease-in-out"
@@ -58,16 +68,14 @@ export default function HydrationCard({ currentDate }: { currentDate: string }) 
       {/* Bottom Row: Quick Add Buttons */}
       <div className="flex gap-2">
         <button 
-          type="button"
-          onClick={() => addHydration(500, currentDate)}
-          className="flex-1 rounded-xl bg-blue-50 py-2 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-100"
+          onClick={(e) => handleAdd(e, 500)}
+          className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-semibold py-2 rounded-xl transition-colors"
         >
           + 500 ml
         </button>
         <button 
-          type="button"
-          onClick={() => addHydration(1000, currentDate)}
-          className="flex-1 rounded-xl bg-blue-50 py-2 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-100"
+          onClick={(e) => handleAdd(e, 1000)}
+          className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-semibold py-2 rounded-xl transition-colors"
         >
           + 1 L
         </button>

@@ -25,7 +25,7 @@ export const useHydrationStore = create<HydrationState>()(
         logs: [
           ...state.logs,
           {
-            id: crypto.randomUUID(),
+            id: Date.now().toString(36) + Math.random().toString(36).substring(2),
             date,
             amountMl,
             timestamp: Date.now(),
