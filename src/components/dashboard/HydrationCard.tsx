@@ -18,6 +18,7 @@ export default function HydrationCard({ currentDate }: { currentDate: string }) 
 
   // Add water, but prevent the card click event from firing
   const handleAdd = (e: React.MouseEvent, amount: number) => {
+    e.preventDefault();
     e.stopPropagation(); 
     addHydration(amount, currentDate);
   };
@@ -68,12 +69,14 @@ export default function HydrationCard({ currentDate }: { currentDate: string }) 
       {/* Bottom Row: Quick Add Buttons */}
       <div className="flex gap-2">
         <button 
+          type="button"
           onClick={(e) => handleAdd(e, 500)}
           className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-semibold py-2 rounded-xl transition-colors"
         >
           + 500 ml
         </button>
         <button 
+          type="button"
           onClick={(e) => handleAdd(e, 1000)}
           className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-semibold py-2 rounded-xl transition-colors"
         >
