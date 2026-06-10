@@ -83,7 +83,7 @@ export async function getWeeklyData(currentDate: string) {
   });
 
   // Group the logs by date
-  const grouped = logs.reduce((acc, log) => {
+  const grouped = logs.reduce((acc: Record<string, number>, log: { date: string; amountMl: number }) => {
     acc[log.date] = (acc[log.date] || 0) + log.amountMl;
     return acc;
   }, {} as Record<string, number>);
