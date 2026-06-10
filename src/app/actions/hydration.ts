@@ -28,8 +28,7 @@ export async function getDailyTotal(date: string) {
   const logs = await prisma.hydrationLog.findMany({
     where: { date },
   });
-  return logs.reduce((total, log) => total + log.amountMl, 0);
-}
+  return logs.reduce((total: number, log: { amountMl: number }) => total + log.amountMl, 0);}
 
 export async function addHydration(amountMl: number, date: string) {
   await prisma.hydrationLog.create({
