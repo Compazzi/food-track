@@ -28,17 +28,23 @@ export default function HydrationPage() {
   // Fetch from SQLite database on mount
   useEffect(() => {
     const loadDatabaseValues = async () => {
-      const total = await getDailyTotal(currentDate);
-      const goal = await getHydrationGoal();
-      const weekly = await getWeeklyData(currentDate);
+      try {
+        const total = await getDailyTotal(currentDate);
+        const goal = await getHydrationGoal();
+        const weekly = await getWeeklyData(currentDate);
 
-      setCurrentTotal(total);
-      setTargetMl(goal);
-      setWeeklyData(weekly);
-      
-      setEditValue(total.toString());
-      setGoalValue(goal.toString());
-      setIsLoading(false);
+        setCurrentTotal(total);
+        setTargetMl(goal);
+        setWeeklyData(weekly);
+        
+        setEditValue(total.toString());
+        setGoalValue(goal.toString());
+      } catch (error) {
+        console.error("Failed to connect to the database:", error);
+      } finally {
+        // The 'finally' block ensures this runs no matter what happens!
+        setIsLoading(false); 
+      }
     };
     
     loadDatabaseValues();
