@@ -1,4 +1,4 @@
-// src/lib/hydration-store.ts
+// OBSOLETE: This is no longer used.
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { HydrationLog } from '../types/models';

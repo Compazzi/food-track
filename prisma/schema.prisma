@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// --- PRODUCTS ---
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  brand       String?
+  barcode     String?   @unique
+  servingSize Float
+  servingUnit String
+  calories    Float
+  protein     Float
+  carbs       Float
+  fat         Float
+  nutrients   String    @default("{}") // Stores the Record<string, number> as a JSON string
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  mealLogs    MealLog[]
+}
+
+// --- MEAL LOGS ---
+model MealLog {
+  id        String   @id @default(cuid())
+  date      String   // Format: YYYY-MM-DD
+  timestamp Int      // Unix timestamp
+  quantity  Float
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+// --- HYDRATION ---
+model HydrationLog {
+  id        String   @id @default(cuid())
+  date      String   // Format: YYYY-MM-DD
+  amountMl  Int
+  timestamp Float
+}
+
+// --- SETTINGS ---
+model Settings {
+  id               String @id @default("default")
+  hydrationTargetMl Int   @default(2500)
+  calorieTarget    Int    @default(2000)
+  trackedNutrients String @default("[]") // Stores array of tracked nutrient keys as a JSON string
+}

@@ -2,20 +2,52 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useHydrationStore } from '@/lib/hydration-store';
 import { TODAY } from '@/lib/constants'; 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { 
+  getDailyTotal, 
+  getHydrationGoal, 
+  getWeeklyData, 
+  editDailyTotal, 
+  setHydrationGoal 
+} from '@/app/actions/hydration';
 
 export default function HydrationPage() {
-  const { targetMl, setTargetMl, getDailyTotal, getWeeklyData, editDailyTotal } = useHydrationStore();
-  
   const currentDate = TODAY || new Date().toISOString().split('T')[0]; 
-  const currentTotal = getDailyTotal(currentDate);
-  const weeklyData = getWeeklyData(currentDate);
 
-  // Format data for the chart (adds short day names like Mon, Tue)
+  // --- DATABASE STATE ---
+  const [targetMl, setTargetMl] = useState(2500);
+  const [currentTotal, setCurrentTotal] = useState(0);
+  const [weeklyData, setWeeklyData] = useState<Array<{date: string, amountMl: number}>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // --- FORM STATE ---
+  const [editValue, setEditValue] = useState("");
+  const [goalValue, setGoalValue] = useState("");
+
+  // Fetch from SQLite database on mount
+  useEffect(() => {
+    const loadDatabaseValues = async () => {
+      const total = await getDailyTotal(currentDate);
+      const goal = await getHydrationGoal();
+      const weekly = await getWeeklyData(currentDate);
+
+      setCurrentTotal(total);
+      setTargetMl(goal);
+      setWeeklyData(weekly);
+      
+      setEditValue(total.toString());
+      setGoalValue(goal.toString());
+      setIsLoading(false);
+    };
+    
+    loadDatabaseValues();
+  }, [currentDate]);
+
+  // Format data for the chart
   const formattedWeeklyData = weeklyData.map(d => {
-    const dateObj = new Date(d.date);
+    // We add 'T00:00:00' to force local timezone parsing and avoid day shifting
+    const dateObj = new Date(d.date + 'T00:00:00');
     return {
       ...d,
       dayName: dateObj.toLocaleDateString('en-US', { weekday: 'short' })
@@ -24,32 +56,39 @@ export default function HydrationPage() {
 
   // Calculate statistics
   const total7Days = weeklyData.reduce((sum, day) => sum + day.amountMl, 0);
-  const dailyAverage = Math.round(total7Days / 7);
+  const dailyAverage = weeklyData.length > 0 ? Math.round(total7Days / weeklyData.length) : 0;
 
-  // States for forms
-  const [editValue, setEditValue] = useState(currentTotal.toString());
-  const [goalValue, setGoalValue] = useState(targetMl.toString());
-
-  // Keep the edit input synced if the user adds water from the dashboard
-  useEffect(() => {
-    setEditValue(currentTotal.toString());
-  }, [currentTotal]);
-
-  const handleEditSubmit = (e: React.FormEvent) => {
+  // --- HANDLERS ---
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseInt(editValue);
     if (!isNaN(val) && val >= 0) {
-      editDailyTotal(val, currentDate);
+      // Optimistically update UI
+      setCurrentTotal(val); 
+      // Save to database
+      await editDailyTotal(val, currentDate);
+      // Refresh the chart data
+      const newWeekly = await getWeeklyData(currentDate);
+      setWeeklyData(newWeekly);
     }
   };
 
-  const handleGoalSubmit = (e: React.FormEvent) => {
+  const handleGoalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseInt(goalValue);
     if (!isNaN(val) && val > 0) {
       setTargetMl(val);
+      await setHydrationGoal(val);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#4ade80] via-[#34d399] to-[#fde047] p-4 flex items-center justify-center">
+        <p className="text-white font-bold text-xl animate-pulse">Loading Database...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#4ade80] via-[#34d399] to-[#fde047] p-4 font-sans pb-20">
@@ -109,7 +148,6 @@ export default function HydrationPage() {
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   formatter={(value: any) => [`${value} ml`, 'Intake']}
                 />
-                {/* Dashed line representing the minimum floor. I used blue for water instead of red for limit. */}
                 <ReferenceLine 
                   y={targetMl} 
                   stroke="#3b82f6" 
