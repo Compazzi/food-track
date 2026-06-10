@@ -9,6 +9,10 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    # If you use a custom Docker network for your proxy, declare it here
-    # networks:
-    #   - proxy-network
+    # This creates a permanent bridge between the container and the server
+    volumes:
+      - food-track-data:/app/data
+
+# This tells Docker to manage and protect this volume
+volumes:
+  food-track-data:
