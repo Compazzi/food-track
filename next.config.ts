@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Tells Next.js to create the optimized folder for Docker
+  output: "standalone",
+
   // Mantenha qualquer outra configuração que já exista aqui
   experimental: {
     serverActions: {
