@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  // Tells Next.js to create the optimized folder for Docker
-  output: "standalone",
+// Read the custom origin from the .env file (if it exists)
+const customOrigins = process.env.ALLOWED_ORIGIN ? [process.env.ALLOWED_ORIGIN] : [];
 
-  // Mantenha qualquer outra configuração que já exista aqui
+const nextConfig: NextConfig = {
+  output: "standalone",
   experimental: {
     serverActions: {
       allowedOrigins: [
-        "cmpzz-server.tail3be0dc.ts.net:3000", // O seu endereço seguro do Tailscale
         "localhost:3000",
+        ...customOrigins, // This safely injects your Tailscale URL!
       ],
     },
   },
